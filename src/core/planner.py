@@ -6,8 +6,8 @@ starting from city centers and expanding outward.
 
 from dataclasses import dataclass, field
 
-from grid import GridPoint, generate_grid
-from queries import TIER_1_QUERIES, TIER_2_QUERIES, TIER_3_QUERIES
+from core.grid import GridPoint, generate_grid
+from models.queries import TIER_1_QUERIES, TIER_2_QUERIES, TIER_3_QUERIES
 
 __all__ = ["ScrapeTask", "ScrapePlan", "create_plan"]
 

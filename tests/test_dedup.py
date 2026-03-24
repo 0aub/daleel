@@ -1,7 +1,7 @@
 """Tests for the deduplicator."""
 
-from dedup import Deduplicator
-from searcher import Place
+from core.dedup import Deduplicator
+from core.searcher import Place
 
 
 def _make_place(place_id: str, name: str = "Test") -> Place:

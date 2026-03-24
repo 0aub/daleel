@@ -1,10 +1,9 @@
 """daleel (دليل) — Saudi Arabia Business Directory Scraper.
 
-CLI entry point that orchestrates the full scraping pipeline:
+Entry point that orchestrates the full scraping pipeline:
 resolve region → plan strategy → estimate cost → confirm → scrape → export.
 """
 
-import argparse
 import json
 import logging
 import os
@@ -13,16 +12,22 @@ from datetime import UTC, datetime
 
 from dotenv import load_dotenv
 
-from checkpoint import CheckpointData, find_latest_checkpoint, load_checkpoint, save_checkpoint
+from cli import parse_args
 from config import load_config
-from dedup import Deduplicator
-from estimator import display_estimate, estimate_cost
-from exporter import export_excel
-from master_db import MasterDB
-from planner import create_plan
-from regions import REGIONS
-from resolver import resolve_input
-from searcher import Place, search
+from core.dedup import Deduplicator
+from core.planner import create_plan
+from core.searcher import Place, search
+from export.checkpoint import (
+    CheckpointData,
+    find_latest_checkpoint,
+    load_checkpoint,
+    save_checkpoint,
+)
+from export.exporter import export_excel
+from export.master_db import MasterDB
+from models.regions import REGIONS
+from utils.estimator import display_estimate, estimate_cost
+from utils.resolver import resolve_input
 
 logger = logging.getLogger("daleel")
 
@@ -45,24 +50,6 @@ def main() -> None:
         sys.exit(1)
 
     run_scrape(args)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        prog="daleel",
-        description="daleel (دليل) — Saudi Arabia Business Directory Scraper",
-    )
-    parser.add_argument("--region", type=str, help="Region/city name, comma-separated, or 'all'")
-    parser.add_argument("--target", type=int, help="Target number of unique businesses")
-    parser.add_argument("--api-key", type=str, help="Google API key (or set GOOGLE_MAPS_API_KEY)")
-    parser.add_argument("--output", type=str, help="Output filename (default: auto-generated)")
-    parser.add_argument("--resume", action="store_true", help="Resume last interrupted run")
-    parser.add_argument("--dry-run", action="store_true", help="Show cost estimate only")
-    parser.add_argument("--list-regions", action="store_true", help="List all regions and cities")
-    parser.add_argument("--lang", type=str, default="ar", choices=["ar", "en", "both"],
-                        help="Language for results (default: ar)")
-    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
-    return parser.parse_args()
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -90,23 +77,16 @@ def print_regions() -> None:
 
 
 def run_scrape(
-    args: argparse.Namespace,
+    args,
     resume_checkpoint: CheckpointData | None = None,
 ) -> None:
-    """Main scraping pipeline.
-
-    Args:
-        args: CLI arguments.
-        resume_checkpoint: If resuming, the loaded checkpoint data.
-    """
-    # Resolve targets
+    """Main scraping pipeline."""
     targets = resolve_input(args.region)
     print(f"\nResolved {len(targets)} target(s):")
     for t in targets:
         cities = ", ".join(t.city_names) if t.city_names else "all cities"
         print(f"  - {t.region_name}: {cities}")
 
-    # Load config
     config = load_config(api_key=args.api_key, language=args.lang)
 
     # Load master database of all previously scraped place IDs
@@ -117,7 +97,7 @@ def run_scrape(
     # Restore state from checkpoint if resuming
     all_places: list[Place] = []
     dedup = Deduplicator()
-    dedup.load_ids(master.ids)  # Pre-load master IDs so they're treated as duplicates
+    dedup.load_ids(master.ids)
     total_api_calls = 0
 
     if resume_checkpoint:
@@ -131,7 +111,6 @@ def run_scrape(
         city_filter = target.city_names or None
         cities = city_filter or list(region["cities"].keys())
 
-        # Estimate cost
         total_pop = sum(
             region["cities"][c]["population"] for c in cities if c in region["cities"]
         )
@@ -142,18 +121,15 @@ def run_scrape(
         if args.dry_run:
             continue
 
-        # Confirm (skip if resuming — already confirmed)
         if not resume_checkpoint:
             response = input("Proceed? [Y/n]: ").strip().lower()
             if response and response != "y":
                 print("Aborted.")
                 return
 
-        # Create plan
         plan = create_plan(region, args.target, city_filter=city_filter)
         print(f"\nPlan: {plan.total_api_calls} API calls across {len(plan.cities)} cities")
 
-        # Initialize or restore checkpoint
         if resume_checkpoint and resume_checkpoint.region_key == target.region_key:
             cp = resume_checkpoint
         else:
@@ -166,7 +142,6 @@ def run_scrape(
             )
         os.makedirs(config.raw_dir, exist_ok=True)
 
-        # Execute plan
         for task in plan.tasks:
             for grid_point in task.grid_points:
                 if dedup.count >= args.target:
@@ -194,7 +169,6 @@ def run_scrape(
                     all_places.extend(new_places)
                     total_api_calls += result.api_calls
 
-                    # Append raw results
                     with open(cp.results_file, "a", encoding="utf-8") as f:
                         for place in new_places:
                             f.write(json.dumps({
@@ -205,7 +179,6 @@ def run_scrape(
                                 "longitude": place.longitude,
                             }, ensure_ascii=False) + "\n")
 
-                    # Update checkpoint
                     cp.completed_tasks.append(task_key)
                     cp.raw_count += len(result.places)
                     cp.unique_count = dedup.count
@@ -227,12 +200,10 @@ def run_scrape(
     if args.dry_run:
         return
 
-    # Save new IDs to master database
     for place in all_places:
         master.add(place.place_id)
     master.save()
 
-    # Export
     if all_places:
         output_path = args.output or os.path.join(
             config.output_dir, f"{targets[0].region_key}_{args.target}_businesses.xlsx"
@@ -253,7 +224,7 @@ def run_scrape(
         print("\nNo new businesses collected.")
 
 
-def run_resume(args: argparse.Namespace) -> None:
+def run_resume(args) -> None:
     """Resume from the latest checkpoint."""
     cp_path = find_latest_checkpoint()
     if not cp_path:
@@ -267,7 +238,6 @@ def run_resume(args: argparse.Namespace) -> None:
         print("Aborted.")
         return
 
-    # Resume with checkpoint state restored
     args.region = cp.region_key
     args.target = cp.target
     args.dry_run = False

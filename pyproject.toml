@@ -26,14 +26,7 @@ dev = [
 ]
 
 [project.scripts]
-daleel = "daleel:main"
-
-[tool.setuptools]
-py-modules = [
-    "daleel", "config", "regions", "queries", "resolver",
-    "planner", "estimator", "grid", "searcher", "dedup",
-    "checkpoint", "exporter", "master_db",
-]
+daleel = "main:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -49,11 +42,7 @@ select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = [
-    "config", "regions", "queries", "resolver",
-    "planner", "estimator", "grid", "searcher",
-    "dedup", "checkpoint", "exporter",
-]
+known-first-party = ["config", "cli", "core", "models", "export", "utils"]
 
 [tool.mypy]
 python_version = "3.12"

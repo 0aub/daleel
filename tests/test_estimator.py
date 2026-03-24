@@ -1,6 +1,6 @@
 """Tests for the cost estimator."""
 
-from estimator import CostEstimate, estimate_cost
+from utils.estimator import CostEstimate, estimate_cost
 
 
 class TestEstimateCost:

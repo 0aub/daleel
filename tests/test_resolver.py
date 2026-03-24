@@ -2,7 +2,7 @@
 
 import pytest
 
-from resolver import resolve_input
+from utils.resolver import resolve_input
 
 
 class TestResolveInput:

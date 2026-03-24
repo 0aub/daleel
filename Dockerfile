@@ -11,6 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+ENV PYTHONPATH=/app/src
+
 RUN mkdir -p data/checkpoints data/raw data/output
 
-ENTRYPOINT ["python", "daleel.py"]
+ENTRYPOINT ["python", "src/main.py"]

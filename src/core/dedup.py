@@ -3,7 +3,7 @@
 Tracks seen place IDs to ensure each business appears only once in the output.
 """
 
-from searcher import Place
+from core.searcher import Place
 
 __all__ = ["Deduplicator"]
 

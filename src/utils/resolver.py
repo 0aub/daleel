@@ -5,7 +5,7 @@ Handles Arabic names, English names, common misspellings, and case-insensitive m
 
 from dataclasses import dataclass
 
-from regions import REGIONS
+from models.regions import REGIONS
 
 __all__ = ["ResolvedTarget", "resolve_input"]
 

@@ -1,6 +1,6 @@
 """Tests for the grid point generator."""
 
-from grid import generate_grid
+from core.grid import generate_grid
 
 
 class TestGenerateGrid:

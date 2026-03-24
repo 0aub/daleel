@@ -37,16 +37,16 @@ resume: check-env
 	docker compose run --rm daleel --resume
 
 list-regions:
-	docker compose run --rm --entrypoint python daleel -- daleel.py --list-regions
+	docker compose run --rm daleel --list-regions
 
 shell:
 	docker compose run --rm --entrypoint bash daleel
 
 test:
-	docker compose run --rm --entrypoint pytest daleel tests/ -v
+	docker compose run --rm --entrypoint bash daleel -c "PYTHONPATH=/app/src pytest tests/ -v"
 
 lint:
-	docker compose run --rm --entrypoint ruff daleel check .
+	docker compose run --rm --entrypoint bash daleel -c "ruff check src/ tests/"
 
 clean:
 	rm -rf data/checkpoints/* data/raw/*
