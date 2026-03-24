@@ -182,7 +182,16 @@ def _write_all_businesses(wb: Workbook, places: list[Place]) -> None:
                 )
                 link_cell.hyperlink = link_cell.value
 
-        ws.row_dimensions[row_idx].height = 18
+        # Auto-fit row height based on wrapped content
+        max_lines = 1
+        for col_idx, value in enumerate(values, 1):
+            col_width = COLUMNS[col_idx - 1][1]
+            text = str(value or "")
+            if text and col_width > 0:
+                chars_per_line = max(int(col_width * 1.2), 1)
+                lines = max(len(text) // chars_per_line + 1, text.count("\n") + 1)
+                max_lines = max(max_lines, lines)
+        ws.row_dimensions[row_idx].height = max(18, min(max_lines * 15, 80))
 
     # Freeze header and auto-filter
     ws.freeze_panes = "A2"
