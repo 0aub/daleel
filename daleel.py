@@ -18,6 +18,7 @@ from config import load_config
 from dedup import Deduplicator
 from estimator import display_estimate, estimate_cost
 from exporter import export_excel
+from master_db import MasterDB
 from planner import create_plan
 from regions import REGIONS
 from resolver import resolve_input
@@ -108,9 +109,15 @@ def run_scrape(
     # Load config
     config = load_config(api_key=args.api_key, language=args.lang)
 
+    # Load master database of all previously scraped place IDs
+    master = MasterDB()
+    if master.total_count > 0:
+        print(f"\nMaster DB: {master.total_count:,} businesses from previous runs (will be skipped)")
+
     # Restore state from checkpoint if resuming
     all_places: list[Place] = []
     dedup = Deduplicator()
+    dedup.load_ids(master.ids)  # Pre-load master IDs so they're treated as duplicates
     total_api_calls = 0
 
     if resume_checkpoint:
@@ -220,6 +227,11 @@ def run_scrape(
     if args.dry_run:
         return
 
+    # Save new IDs to master database
+    for place in all_places:
+        master.add(place.place_id)
+    master.save()
+
     # Export
     if all_places:
         output_path = args.output or os.path.join(
@@ -228,14 +240,17 @@ def run_scrape(
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
         export_excel(all_places, output_path, metadata={
             "Target": args.target,
-            "Actual": dedup.count,
+            "New Businesses": len(all_places),
+            "Total in Master DB": master.total_count,
+            "Skipped (duplicates)": master.total_count - len(all_places),
             "API Calls": total_api_calls,
             "Estimated Cost": f"${total_api_calls * 0.032:.2f}",
             "Regions": ", ".join(t.region_name for t in targets),
         })
-        print(f"\nExported {dedup.count} businesses to {output_path}")
+        print(f"\nExported {len(all_places)} new businesses to {output_path}")
+        print(f"Master DB: {master.total_count:,} total unique businesses across all runs")
     else:
-        print("\nNo businesses collected.")
+        print("\nNo new businesses collected.")
 
 
 def run_resume(args: argparse.Namespace) -> None:

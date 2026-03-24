@@ -32,7 +32,7 @@ daleel = "daleel:main"
 py-modules = [
     "daleel", "config", "regions", "queries", "resolver",
     "planner", "estimator", "grid", "searcher", "dedup",
-    "checkpoint", "exporter",
+    "checkpoint", "exporter", "master_db",
 ]
 
 [tool.pytest.ini_options]

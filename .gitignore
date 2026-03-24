@@ -21,6 +21,7 @@ env/
 data/checkpoints/
 data/raw/
 data/output/
+data/master_place_ids.json
 
 # IDE
 .vscode/
