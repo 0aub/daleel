@@ -1,0 +1,13 @@
+name: daleel
+
+services:
+  daleel:
+    build: .
+    container_name: daleel
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    entrypoint: ["python", "daleel.py"]

@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "daleel"
+version = "0.1.0"
+description = "Saudi Arabia business directory scraper using Google Places API"
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+dependencies = [
+    "requests>=2.31.0",
+    "openpyxl>=3.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "types-requests>=2.31",
+    "types-openpyxl>=3.1",
+]
+
+[project.scripts]
+daleel = "daleel:main"
+
+[tool.setuptools]
+py-modules = [
+    "daleel", "config", "regions", "queries", "resolver",
+    "planner", "estimator", "grid", "searcher", "dedup",
+    "checkpoint", "exporter",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "config", "regions", "queries", "resolver",
+    "planner", "estimator", "grid", "searcher",
+    "dedup", "checkpoint", "exporter",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
